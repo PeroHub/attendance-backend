@@ -55,8 +55,7 @@ router.post('/request-token', async (req, res) => {
     }
 });
 
-// @route   POST /api/check-in
-// @desc    Check-in a user and get a session token
+
 router.post('/check-in', async (req, res) => {
     const { email, token } = req.body;
     try {
@@ -104,8 +103,7 @@ router.post('/check-in', async (req, res) => {
     }
 });
 
-// @route   POST /api/check-out
-// @desc    Check-out a user
+
 router.post('/check-out', auth, async (req, res) => {
     try {
         const userId = req.user.id;
@@ -133,8 +131,7 @@ router.post('/check-out', auth, async (req, res) => {
     }
 });
 
-// @route   GET /api/me
-// @desc    Get the logged-in user's data
+
 router.get('/me', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id).select('-__v');
