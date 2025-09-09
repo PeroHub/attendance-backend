@@ -8,7 +8,7 @@ const jwt = require('jsonwebtoken');
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    if (email === 'admin@dept.com' && password === 'admin123') { // Replace with secure credentials
+    if (email === 'admin@dept.com' && password === 'admin123') { 
         const payload = {
             user: {
                 id: 'admin',
@@ -23,8 +23,7 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// @route   POST /api/admin/add-staff
-// @desc    Add a new staff member
+
 router.post('/add-staff', auth, async (req, res) => {
     const { email, firstName, lastName } = req.body;
     try {
@@ -41,8 +40,18 @@ router.post('/add-staff', auth, async (req, res) => {
     }
 });
 
-// @route   DELETE /api/admin/remove-staff
-// @desc    Remove a staff member
+
+router.get('/total-staff', auth, async (req, res) => {
+    try {
+        const totalStaff = await User.countDocuments();
+        res.status(200).json({ totalStaff });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+
 router.delete('/remove-staff/:email', auth, async (req, res) => {
     const { email } = req.params;
     try {
@@ -57,8 +66,7 @@ router.delete('/remove-staff/:email', auth, async (req, res) => {
     }
 });
 
-// @route   GET /api/admin/attendance-records
-// @desc    Get all attendance records, with optional filters
+
 router.get('/attendance-records', auth, async (req, res) => {
     try {
         const { startDate, endDate, email } = req.query;
@@ -82,8 +90,6 @@ router.get('/attendance-records', auth, async (req, res) => {
         
         const records = await Attendance.find(filter).populate('userId', 'email firstName lastName');
 
-        // Optional: Implement CSV export logic here
-        // For a simple response, we'll just send JSON
         res.status(200).json(records);
     } catch (err) {
         console.error(err.message);
