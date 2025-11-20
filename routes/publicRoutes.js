@@ -8,6 +8,10 @@ const nodemailer = require('nodemailer');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// --- RESEND SETUP ---
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const transporter = nodemailer.createTransport({
     // service: 'gmail',
     host: "smtp.gmail.com",
@@ -45,13 +49,26 @@ router.post('/request-token', async (req, res) => {
             text: `Your one-time login token is: ${token}. It is valid for 5 minutes.`,
         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error(error);
-                return res.status(500).json({ msg: 'Error sending email.' });
-            }
-            res.status(200).json({ msg: 'Token sent to your email.' });
+        // transporter.sendMail(mailOptions, (error, info) => {
+        //     if (error) {
+        //         console.error(error);
+        //         return res.status(500).json({ msg: 'Error sending email.' });
+        //     }
+        //     res.status(200).json({ msg: 'Token sent to your email.' });
+        // });
+
+        const response = await resend.emails.send({
+            from: process.env.SENDER_EMAIL,
+            to: email,
+            subject: 'Attendance System Login Token',
+            text: `Your one-time login token is: ${token}. It is valid for 5 minutes.`,
         });
+        if (response.error) {
+            console.error("Resend error:", response.error);
+            return res.status(500).json({ msg: 'Error sending email.' });
+        }
+
+        return res.status(200).json({ msg: 'Token sent to your email.' });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
