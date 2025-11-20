@@ -43,8 +43,9 @@ router.post('/add-staff', auth, async (req, res) => {
 
 router.get('/total-staff', auth, async (req, res) => {
     try {
+        const staffList = await User.find({});
         const totalStaff = await User.countDocuments();
-        res.status(200).json({ totalStaff });
+        res.status(200).json({ totalStaff, staffList });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -73,10 +74,10 @@ router.get('/attendance-records', auth, async (req, res) => {
         let filter = {};
 
         if (startDate && endDate) {
-            filter.checkInTime = {
-                $gte: new Date(startDate),
-                $lte: new Date(endDate),
-            };
+            filter.$or = [
+                { checkInTime: { $gte: new Date(startDate), $lte: new Date(endDate) } },
+                { checkOutTime: { $gte: new Date(startDate), $lte: new Date(endDate) } },
+            ];
         }
 
         if (email) {
@@ -88,7 +89,9 @@ router.get('/attendance-records', auth, async (req, res) => {
             }
         }
         
-        const records = await Attendance.find(filter).populate('userId', 'email firstName lastName');
+        const records = await Attendance.find(filter)
+            .populate('userId', 'email firstName lastName')
+            .sort({ checkInTime: -1 });
 
         res.status(200).json(records);
     } catch (err) {
