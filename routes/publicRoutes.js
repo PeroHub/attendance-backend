@@ -46,7 +46,7 @@ router.post('/request-token', async (req, res) => {
             from: process.env.GMAIL_USER,
             to: email,
             subject: 'Attendance System Login Token',
-            text: `Your one-time login token is: ${token}. It is valid for 5 minutes.`,
+            text: `Your one-time login token is: ${token}. It is valid for 45 Seconds.`,
         };
 
         // transporter.sendMail(mailOptions, (error, info) => {
@@ -61,7 +61,7 @@ router.post('/request-token', async (req, res) => {
             from: process.env.SENDER_EMAIL,
             to: email,
             subject: 'Attendance System Login Token',
-            text: `Your one-time login token is: ${token}. It is valid for 5 minutes.`,
+            text: `Your one-time login token is: ${token}. It is valid for 45 Seconds.`,
         });
         if (response.error) {
             console.error("Resend error:", response.error);
