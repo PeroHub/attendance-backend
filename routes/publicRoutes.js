@@ -127,30 +127,58 @@ router.post('/check-in', async (req, res) => {
 router.post('/check-out', auth, async (req, res) => {
     try {
         const userId = req.user.id;
-        const attendanceRecord = await Attendance.findOne({
+        const checkOutTime = new Date();
+
+        // 1. Calculate the duration before the update, using the checkInTime from the existing record.
+        // We'll calculate the difference based on the current time and the time found in the database.
+        
+        // Find the active record first to get the check-in time
+        const existingRecord = await Attendance.findOne({
             userId: userId,
             checkOutTime: null,
         }).sort({ checkInTime: -1 });
 
-        if (!attendanceRecord) {
+        if (!existingRecord) {
             return res.status(400).json({ msg: 'You are not checked in.' });
         }
-
-        const checkOutTime = new Date();
-        const checkInTime = attendanceRecord.checkInTime;
+        
+        const checkInTime = existingRecord.checkInTime;
+        // Calculate the raw number of hours worked
         const totalHoursWorked = (checkOutTime.getTime() - checkInTime.getTime()) / (1000 * 60 * 60);
 
-        attendanceRecord.checkOutTime = checkOutTime;
-        attendanceRecord.totalHoursWorked = totalHoursWorked.toFixed(2);
-        await attendanceRecord.save();
+        // 2. Perform the atomic update using findOneAndUpdate
+        const updatedRecord = await Attendance.findOneAndUpdate(
+            {
+                // Query: Find the specific record to update
+                _id: existingRecord._id,
+                checkOutTime: null, // Double-check it's still open before updating
+            },
+            {
+                // Update: Set the checkout time and the number value for hours worked
+                $set: {
+                    checkOutTime: checkOutTime,
+                    totalHoursWorked: totalHoursWorked, // Save as number
+                }
+            },
+            { new: true } // Return the updated document
+        );
 
-        res.status(200).json({ msg: 'Check-out successful.', totalHours: totalHoursWorked.toFixed(2) });
+        if (!updatedRecord) {
+            // This handles a rare race condition where the record was just checked out by another process
+            return res.status(400).json({ msg: 'Attendance record update failed or was already closed.' });
+        }
+        
+        // 3. Return the response
+        res.status(200).json({ 
+            msg: 'Check-out successful.', 
+            totalHours: totalHoursWorked.toFixed(2) 
+        });
+
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
-
 
 router.get('/me', auth, async (req, res) => {
     try {
