@@ -89,11 +89,25 @@ router.get('/attendance-records', auth, async (req, res) => {
             }
         }
         
+        // 1. Fetch records using .lean() for plain JavaScript objects
         const records = await Attendance.find(filter)
+            .lean() // <-- Use .lean() here
             .populate('userId', 'email firstName lastName')
             .sort({ checkInTime: -1 });
 
-        res.status(200).json(records);
+        // 2. Map over the records to ensure 'checkOutTime' is present, even if null
+        const formattedRecords = records.map(record => {
+            // totalHoursWorked is usually present due to default: 0 in the schema.
+            // checkOutTime is often missing if it's null.
+            if (!record.checkOutTime) {
+                record.checkOutTime = null; // Explicitly set to null if missing/undefined
+            }
+            return record;
+        });
+
+        // res.status(200).json(records); // <-- OLD LINE
+        res.status(200).json(formattedRecords); // <-- NEW LINE
+
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
